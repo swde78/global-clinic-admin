@@ -1,15 +1,21 @@
+// eslint.config.js
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'node_modules'] },
+
+  // القواعد العامة للملفات .js, .jsx
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
@@ -28,6 +34,29 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+    },
+  },
+
+  // 🔹 تخصيص لملفات الاختبار
+  {
+    files: ['src/**/*.test.jsx', 'src/setupTests.js', 'src/test-setup.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        test: 'readonly',
+        expect: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        vi: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+    rules: {
+      'no-undef': 'off', // ⚠️ مهم: السماح باستخدام vitest globals
     },
   },
 ]
