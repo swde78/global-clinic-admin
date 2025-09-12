@@ -1,0 +1,48 @@
+name: CI Pipeline (Test, Lint, Build)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PNPM_VERSION: 10.4.1
+  NODE_VERSION: 20
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm run test -- --run
+
+      - name: Build project
+        run: pnpm run build
+
+      - name: Verify dist/ exists
+        run: |
+          ls -la dist/
+          [ -f dist/index.html ] || exit 1
+          echo "✅ بناء المشروع ناجح وتم إنشاء dist/"
