@@ -8,8 +8,8 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = 'https://8001-i1csmgelwq595e3wt1acg-c7c750f2.manusvm.computer';
+import { useAuth } from '../App'; 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const ADMIN_API_KEY = 'GLOBAL_CLINIC_ADMIN_2024_SECURE_KEY'; // In production, this should be from env
 
 function Login() {
@@ -20,74 +20,75 @@ function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setError('');
+const handleSubmit = async (event) => {
+  event.preventDefault();
+  setError('');
+  
+  if (!validateEmail(email)) {
+    setError('Please enter a valid email address');
+    return;
+  }
+
+  if (!password || password.length < 8) {
+    setError('Password must be at least 8 characters long');
+    return;
+  }
+
+  if (!adminKey || adminKey !== ADMIN_API_KEY) {
+    setError('Invalid admin access key. Unauthorized access attempt logged.');
+    return;
+  }
+
+  setLoading(true);
+  
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/admin/login`, {
+      email: email,
+      password: password,
+      admin_key: adminKey
+    });
     
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    if (!password || password.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return;
-    }
-
-    if (!adminKey || adminKey !== ADMIN_API_KEY) {
-      setError('Invalid admin access key. Unauthorized access attempt logged.');
-      return;
-    }
-
-    setLoading(true);
     
-    try {
-      // First authenticate as admin user
-      const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
-        email: email,
-        password: password,
-        admin_key: adminKey
-      });
-      
-      console.log('Admin Login Response:', response.data);
-      
-      // Store the JWT token and admin credentials
-      if (response.data.access_token) {
-        localStorage.setItem('admin_access_token', response.data.access_token);
-        localStorage.setItem('admin_user_id', response.data.user_id);
-        localStorage.setItem('admin_role', response.data.role);
-        localStorage.setItem('admin_api_key', adminKey);
-      }
-      
-      // Navigate to admin dashboard
+         // حفظ البيانات
+      localStorage.setItem('admin_access_token', response.data.access_token);
+      localStorage.setItem('admin_user_id', response.data.user_id.toString());
+      localStorage.setItem('admin_role', response.data.role);
+      localStorage.setItem('admin_api_key', adminKey);
+        
+        
+        // ⏳ انتظر قليلاً لضمان تسجيل التغيير في localStorage
       navigate('/dashboard');
-      
-    } catch (error) {
-      console.error('Admin login error:', error);
-      
-      if (error.response) {
-        const errorMessage = error.response.data.detail || 'Server error occurred';
-        if (error.response.status === 401) {
-          setError('Invalid admin credentials. Access denied.');
-        } else if (error.response.status === 403) {
-          setError('Insufficient privileges. Admin access required.');
-        } else {
-          setError(errorMessage);
-        }
-      } else if (error.request) {
-        setError('Unable to connect to server. Please check your connection.');
+        // وجه إلى لوحة التحكم
+     // navigate('/dashboard', { replace: true });
+      window.location.reload(); 
+
+  } catch (error) {
+    console.error('Admin login error:', error);
+    
+    if (error.response) {
+      const errorMessage = error.response.data.detail || 'Server error occurred';
+      if (error.response.status === 401) {
+        setError('Invalid admin credentials. Access denied.');
+      } else if (error.response.status === 403) {
+        setError('Insufficient privileges. Admin access required.');
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        setError(errorMessage);
       }
-    } finally {
-      setLoading(false);
+    } else if (error.request) {
+      setError('Unable to connect to server. Please check your connection.');
+    } else {
+      setError('An unexpected error occurred. Please try again.');
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Container maxWidth="sm">

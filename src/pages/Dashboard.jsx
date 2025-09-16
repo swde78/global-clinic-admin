@@ -13,7 +13,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'https://8001-i1csmgelwq595e3wt1acg-c7c750f2.manusvm.computer';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Dashboard() {
   const [metrics, setMetrics] = useState({
@@ -68,83 +68,63 @@ function Dashboard() {
     }
   };
 
+  
   const fetchMetrics = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    setError('');
+  if (showLoading) setLoading(true);
+  setError('');
+  
+  try {
+    const token = localStorage.getItem('admin_access_token');
     
-    try {
-      const token = localStorage.getItem('admin_access_token');
-      const adminKey = localStorage.getItem('admin_api_key');
-      
-      if (!token || !adminKey) {
-        navigate('/');
-        return;
-      }
-
-      // In production, these would be separate API calls
-      const [usersResponse, casesResponse, revenueResponse, healthResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/admin/users/stats`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Admin-Key': adminKey
-          },
-        }),
-        axios.get(`${API_BASE_URL}/admin/cases/stats`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Admin-Key': adminKey
-          },
-        }),
-        axios.get(`${API_BASE_URL}/admin/revenue/stats`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Admin-Key': adminKey
-          },
-        }),
-        axios.get(`${API_BASE_URL}/admin/system/health`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Admin-Key': adminKey
-          },
-        })
-      ]);
-      
-      setMetrics({
-        totalUsers: usersResponse.data.total_users || 498,
-        totalPatients: usersResponse.data.total_patients || 450,
-        totalDoctors: usersResponse.data.total_doctors || 48,
-        totalCases: casesResponse.data.total_cases || 1247,
-        totalRevenue: revenueResponse.data.total_revenue || 156750,
-        systemHealth: healthResponse.data.status || 'excellent'
-      });
-      
-    } catch (error) {
-      console.error('Error fetching admin metrics:', error);
-      
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        localStorage.removeItem('admin_access_token');
-        localStorage.removeItem('admin_user_id');
-        localStorage.removeItem('admin_role');
-        localStorage.removeItem('admin_api_key');
-        navigate('/');
-      } else {
-        // For demo purposes, use mock data if API fails
-        setMetrics({
-          totalUsers: 498,
-          totalPatients: 450,
-          totalDoctors: 48,
-          totalCases: 1247,
-          totalRevenue: 156750,
-          systemHealth: 'excellent'
-        });
-        setError('Using cached data. Some metrics may not be current.');
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (!token) {
+      navigate('/');
+      return;
     }
-  };
 
+    // ⚠️ تغيير: استدعاء endpoint واحد فقط
+    const response = await axios.get(`${API_BASE_URL}/api/admin/dashboard/stats`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    setMetrics({
+      totalUsers: response.data.total_users,
+      totalPatients: response.data.total_patients,
+      totalDoctors: response.data.total_doctors,
+      totalCases: response.data.total_cases,
+      totalRevenue: response.data.total_revenue,
+      systemHealth: response.data.system_health
+    });
+    
+  } catch (error) {
+    console.error('Error fetching admin metrics:', error);
+    
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_user_id');
+      localStorage.removeItem('admin_role');
+      localStorage.removeItem('admin_api_key');
+      navigate('/');
+    } else {
+      // استخدم بيانات وهمية فقط إذا فشل الاتصال
+      setMetrics({
+        totalUsers: 498,
+        totalPatients: 450,
+        totalDoctors: 48,
+        totalCases: 1247,
+        totalRevenue: 156750,
+        systemHealth: 'excellent'
+      });
+      setError('Using demo data. Live data unavailable.');
+    }
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+  
   const handleRefresh = () => {
     setRefreshing(true);
     fetchMetrics(false);

@@ -77,19 +77,21 @@ export const useAuth = () => {
 };
 
 // Authentication Provider Component with maximum security
-const AuthProvider = ({ children }) => {
+  const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check if admin is already logged in with enhanced security validation
+    
+     // Check if admin is already logged in with enhanced security validation
     const token = localStorage.getItem('admin_access_token');
     const userId = localStorage.getItem('admin_user_id');
     const userRole = localStorage.getItem('admin_role');
     const adminKey = localStorage.getItem('admin_api_key');
     
-    // Enhanced security: require all credentials and validate admin role
+
+      // Enhanced security: require all credentials and validate admin role
     if (token && userId && userRole === 'admin' && adminKey) {
       // Additional security check: validate token format and expiry
       try {
@@ -196,7 +198,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 // Public Route Component with security redirect
-const PublicRoute = ({ children }) => {
+  const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
   
   if (loading) {

@@ -12,7 +12,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'https://8001-i1csmgelwq595e3wt1acg-c7c750f2.manusvm.computer';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -173,7 +173,7 @@ function Transactions() {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/admin/transactions`, {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/transactions`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'X-Admin-Key': adminKey
